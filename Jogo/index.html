@@ -349,7 +349,7 @@
         
         <div class="controles">
             <h3>Controles:</h3>
-            <p>↑ ↓ ← → - Mover a cobrinha</p>
+            <p>W A S D - Mover a cobrinha</p>
             <p>ESPAÇO - Pausar/Continuar</p>
             <p>R - Reiniciar</p>
         </div>
@@ -540,22 +540,22 @@
             if (!jogoAtivo && e.key !== 'r' && e.key !== 'R') return;
             
             switch(e.key) {
-                case 'ArrowUp':
+                case 'w':
                     if (direcao.y === 0) {
                         direcao = {x: 0, y: -tamanhoBloco};
                     }
                     break;
-                case 'ArrowDown':
+                case 's':
                     if (direcao.y === 0) {
                         direcao = {x: 0, y: tamanhoBloco};
                     }
                     break;
-                case 'ArrowLeft':
+                case 'a':
                     if (direcao.x === 0) {
                         direcao = {x: -tamanhoBloco, y: 0};
                     }
                     break;
-                case 'ArrowRight':
+                case 'd':
                     if (direcao.x === 0) {
                         direcao = {x: tamanhoBloco, y: 0};
                     }
