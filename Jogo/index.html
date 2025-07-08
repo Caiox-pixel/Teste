@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Cobrinha</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            color: #27ae60;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #canvas {
+            border: 3px solid #27ae60;
+            border-radius: 10px;
+            background: #1a1a1a;
+            margin: 20px 0;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .pontuacao {
+            color: #f39c12;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .velocidade {
+            color: #3498db;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .controles {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .controles h3 {
+            margin-top: 0;
+            color: #ecf0f1;
+        }
+
+        .controles p {
+            margin: 5px 0;
+            color: #bdc3c7;
+        }
+
+        .botoes {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        button:hover {
+            background: #2ecc71;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #e74c3c;
+            color: white;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+        .game-over h2 {
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+
+        .game-over button {
+            background: #e74c3c;
+            margin-top: 15px;
+        }
+
+        .game-over button:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            #canvas {
+                max-width: 100%;
+            }
+            
+            .info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .botoes {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐍 Jogo da Cobrinha</h1>
+        
+        <div class="info">
+            <div class="pontuacao">Pontuação: <span id="pontuacao">0</span></div>
+            <div class="velocidade">Velocidade: <span id="velocidade">1</span></div>
+        </div>
+        
+        <canvas id="canvas" width="400" height="400"></canvas>
+        
+        <div class="botoes">
+            <button onclick="iniciarJogo()">Iniciar Jogo</button>
+            <button onclick="pausarJogo()">Pausar</button>
+            <button onclick="reiniciarJogo()">Reiniciar</button>
+        </div>
+        
+        <div class="controles">
+            <h3>Controles:</h3>
+            <p>↑ ↓ ← → - Mover a cobrinha</p>
+            <p>ESPAÇO - Pausar/Continuar</p>
+            <p>R - Reiniciar</p>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <h2>Fim de Jogo!</h2>
+        <p>Sua pontuação final: <span id="pontuacaoFinal">0</span></p>
+        <button onclick="reiniciarJogo()">Jogar Novamente</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const pontuacaoElemento = document.getElementById('pontuacao');
+        const velocidadeElemento = document.getElementById('velocidade');
+        const gameOverDiv = document.getElementById('gameOver');
+        const pontuacaoFinalElemento = document.getElementById('pontuacaoFinal');
+
+        // Configurações do jogo
+        const tamanhoBloco = 20;
+        const larguraCanvas = canvas.width;
+        const alturaCanvas = canvas.height;
+
+        // Estado do jogo
+        let cobrinha = [{x: 200, y: 200}];
+        let direcao = {x: 0, y: 0};
+        let comida = gerarComida();
+        let pontuacao = 0;
+        let velocidade = 1;
+        let jogoAtivo = false;
+        let jogoPausado = false;
+        let intervaloDificuldade = 150;
+
+        // Função para gerar comida em posição aleatória
+        function gerarComida() {
+            const x = Math.floor(Math.random() * (larguraCanvas / tamanhoBloco)) * tamanhoBloco;
+            const y = Math.floor(Math.random() * (alturaCanvas / tamanhoBloco)) * tamanhoBloco;
+            return {x, y};
+        }
+
+        // Função para desenhar um quadrado
+        function desenharQuadrado(x, y, cor) {
+            ctx.fillStyle = cor;
+            ctx.fillRect(x, y, tamanhoBloco, tamanhoBloco);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, tamanhoBloco, tamanhoBloco);
+        }
+
+        // Função para desenhar o jogo
+        function desenhar() {
+            // Limpar canvas
+            ctx.clearRect(0, 0, larguraCanvas, alturaCanvas);
+
+            // Desenhar cobrinha
+            cobrinha.forEach((segmento, index) => {
+                if (index === 0) {
+                    // Cabeça da cobrinha
+                    desenharQuadrado(segmento.x, segmento.y, '#27ae60');
+                } else {
+                    // Corpo da cobrinha
+                    desenharQuadrado(segmento.x, segmento.y, '#2ecc71');
+                }
+            });
+
+            // Desenhar comida
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(comida.x + tamanhoBloco/2, comida.y + tamanhoBloco/2, tamanhoBloco/2 - 2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#c0392b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Função para mover a cobrinha
+        function mover() {
+            if (!jogoAtivo || jogoPausado) return;
+
+            const cabeca = {
+                x: cobrinha[0].x + direcao.x,
+                y: cobrinha[0].y + direcao.y
+            };
+
+            // Verificar colisão com paredes
+            if (cabeca.x < 0 || cabeca.x >= larguraCanvas || 
+                cabeca.y < 0 || cabeca.y >= alturaCanvas) {
+                fimDeJogo();
+                return;
+            }
+
+            // Verificar colisão com próprio corpo
+            if (cobrinha.some(segmento => segmento.x === cabeca.x && segmento.y === cabeca.y)) {
+                fimDeJogo();
+                return;
+            }
+
+            cobrinha.unshift(cabeca);
+
+            // Verificar se comeu a comida
+            if (cabeca.x === comida.x && cabeca.y === comida.y) {
+                pontuacao += 10;
+                pontuacaoElemento.textContent = pontuacao;
+                
+                // Aumentar velocidade a cada 50 pontos
+                if (pontuacao % 50 === 0) {
+                    velocidade++;
+                    velocidadeElemento.textContent = velocidade;
+                    intervaloDificuldade = Math.max(80, intervaloDificuldade - 10);
+                }
+                
+                comida = gerarComida();
+                
+                // Verificar se a comida não apareceu no corpo da cobrinha
+                while (cobrinha.some(segmento => segmento.x === comida.x && segmento.y === comida.y)) {
+                    comida = gerarComida();
+                }
+            } else {
+                cobrinha.pop();
+            }
+        }
+
+        // Função para fim de jogo
+        function fimDeJogo() {
+            jogoAtivo = false;
+            pontuacaoFinalElemento.textContent = pontuacao;
+            gameOverDiv.style.display = 'block';
+        }
+
+        // Função para iniciar o jogo
+        function iniciarJogo() {
+            if (!jogoAtivo) {
+                jogoAtivo = true;
+                jogoPausado = false;
+                gameOverDiv.style.display = 'none';
+                
+                if (cobrinha.length === 1 && pontuacao === 0) {
+                    // Primeiro início - definir direção inicial
+                    direcao = {x: tamanhoBloco, y: 0};
+                }
+                
+                loop();
+            }
+        }
+
+        // Função para pausar o jogo
+        function pausarJogo() {
+            if (jogoAtivo) {
+                jogoPausado = !jogoPausado;
+            }
+        }
+
+        // Função para reiniciar o jogo
+        function reiniciarJogo() {
+            jogoAtivo = false;
+            jogoPausado = false;
+            cobrinha = [{x: 200, y: 200}];
+            direcao = {x: 0, y: 0};
+            comida = gerarComida();
+            pontuacao = 0;
+            velocidade = 1;
+            intervaloDificuldade = 150;
+            
+            pontuacaoElemento.textContent = pontuacao;
+            velocidadeElemento.textContent = velocidade;
+            gameOverDiv.style.display = 'none';
+            
+            desenhar();
+        }
+
+        // Loop principal do jogo
+        function loop() {
+            if (!jogoAtivo) return;
+            
+            mover();
+            desenhar();
+            
+            setTimeout(() => {
+                if (jogoAtivo) {
+                    loop();
+                }
+            }, intervaloDificuldade);
+        }
+
+        // Controles do teclado
+        document.addEventListener('keydown', (e) => {
+            if (!jogoAtivo && e.key !== 'r' && e.key !== 'R') return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    if (direcao.y === 0) {
+                        direcao = {x: 0, y: -tamanhoBloco};
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (direcao.y === 0) {
+                        direcao = {x: 0, y: tamanhoBloco};
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (direcao.x === 0) {
+                        direcao = {x: -tamanhoBloco, y: 0};
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (direcao.x === 0) {
+                        direcao = {x: tamanhoBloco, y: 0};
+                    }
+                    break;
+                case ' ':
+                    pausarJogo();
+                    break;
+                case 'r':
+                case 'R':
+                    reiniciarJogo();
+                    break;
+            }
+        });
+
+        // Inicializar o jogo
+        desenhar();
+    </script>
+</body>
+</html>
